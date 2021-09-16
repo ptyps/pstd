@@ -20,6 +20,21 @@ namespace pstd {
       return out.data();
     }
 
+  struct exception : public std::exception {
+    private:
+      std::string message;
+
+    public:
+      template <typename ...A>
+        exception(pstd::vstring str, A ...args) {
+          message = format(str, args ...);
+        }
+
+      pstd::cstring what() const noexcept override {
+        return message.data();
+      }
+  };
+
   template <typename ...A>
     void log(vstring text, A ...args) {
       auto out = format(text, args ...);
@@ -167,6 +182,18 @@ namespace pstd {
     }
 
   template <template <typename ...> typename C, typename ...A>
+    bool until(C<A...> cont, std::function<bool(typename iter_details<C<A ...>>::type)> func) {
+      for (auto iter = cont.begin(); iter != cont.end(); ++iter) {
+        auto i = func(*iter);
+
+        if (i)
+          return !0;
+      }
+
+      return !1;
+    }
+
+  template <template <typename ...> typename C, typename ...A>
     void remove(C<A...> &cont, typename iter_details<C<A...>>::type find) {
       for (auto iter = cont.begin(); iter != cont.end(); ++iter) {
         if (*iter != find)
@@ -208,4 +235,20 @@ namespace pstd {
       
       return out;
     }
+
+  // ----
+
+  template <typename X, typename Y>
+    inline constexpr bool is_of_type = std::is_same_v<X, Y>;
+
+  template <typename X>
+    inline constexpr bool is_of_void = std::is_void_v<X>;
+
+  template <typename B, typename X>
+    inline bool is_of_instance(const X*) {
+      return std::is_base_of_v<B, X>;
+    }
+
+  template <bool X>
+    using enable_if = std::enable_if_t<X, bool>;
 }
